@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pidmetannya with Firebase</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+  /* Reset some default styles */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f8;
+    color: #333;
+    margin: 0; padding: 0;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  main {
+    background: white;
+    max-width: 480px;
+    width: 100%;
+    padding: 30px 40px;
+    margin: 40px 20px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  }
+  h1, h2 {
+    text-align: center;
+    margin-bottom: 24px;
+    color: #222;
+  }
+  .login label, .login input {
+    display: block;
+    width: 100%;
+  }
+  .login label {
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .login input {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1.5px solid #ccc;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+    outline-offset: 2px;
+  }
+  .login input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 5px rgba(79,70,229,0.5);
+  }
+  button {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 15px;
+    user-select: none;
+  }
+  button:hover:not(:disabled) {
+    background: #4338ca;
+  }
+  button:disabled {
+    background: #a5b4fc;
+    cursor: not-allowed;
+  }
+  #loginError {
+    color: #e11d48;
+    margin-top: 10px;
+    font-weight: 600;
+    min-height: 20px;
+    text-align: center;
+  }
+  .user-list, .history-section {
+    margin-top: 30px;
+  }
+  .user-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    background: #f9fafb;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .user-info {
+    font-weight: 600;
+    font-size: 18px;
+    color: #1e293b;
+  }
+  .user-info.admin-label {
+    color: #ef4444;
+    font-weight: 700;
+    margin-left: 8px;
+    font-size: 14px;
+    font-style: italic;
+  }
+  .user-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .user-controls input[type="text"],
+  .user-controls input[type="password"] {
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    width: 120px;
+    transition: border-color 0.3s ease;
+  }
+  .user-controls input[type="text"]:focus,
+  .user-controls input[type="password"]:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 5px rgba(79,70,229,0.5);
+    outline: none;
+  }
+  .history-section button {
+    width: 70px;
+    font-size: 28px;
+    margin-right: 15px;
+    border-radius: 50%;
+    font-weight: 700;
+    padding: 8px 0;
+    line-height: 1;
+    user-select: none;
+  }
+  #historyList {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-left: 0;
+  }
+  #historyList li {
+    list-style: none;
+    background: #e0e7ff;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 20px;
+    text-align: center;
+    font-weight: 600;
+    color: #3730a3;
+  }
+  @media (max-width: 480px) {
+    main {
+      padding: 20px 20px;
+      margin: 20px 10px;
+    }
+    .user-controls input[type="text"],
+    .user-controls input[type="password"] {
+      width: 100px;
+      font-size: 12px;
+      padding: 6px 8px;
+    }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pidmetannya</h1>
+
+  <div class="login" id="loginDiv">
+    <h2>Login</h2>
+    <label for="nicknameInput">Nickname:</label>
+    <input type="text" id="nicknameInput" placeholder="Enter nickname" />
+    <label for="passwordInput">Password:</label>
+    <input type="password" id="passwordInput" placeholder="Enter password" />
+    <button id="loginBtn" onclick="login()">Login</button>
+    <p id="loginError"></p>
+  </div>
+
+  <div class="user-list" id="userListDiv" style="display:none;">
+    <h2>Users</h2>
+    <div id="usersContainer"></div>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="history-section" id="historyDiv" style="display:none;">
+    <h2>History for <span id="currentUserName"></span></h2>
+    <button onclick="addMark('+')" aria-label="Add plus">+</button>
+    <button onclick="addMark('-')" aria-label="Add minus">?</button>
+    <ul id="historyList"></ul>
+  </div>
+</main>
+
+<script>
+  // ---- Firebase Config ----
+ const firebaseConfig = {
+    apiKey: "AIzaSyAdCQbwBXO2htS1yGAb-MbCcmg6Gh7QzkY",
+    authDomain: "pidmetania.firebaseapp.com",
+    databaseURL: "https://pidmetania-default-rtdb.firebaseio.com",
+    projectId: "pidmetania",
+    storageBucket: "pidmetania.firebasestorage.app",
+    messagingSenderId: "157835623349",
+    appId: "1:157835623349:web:ac15076f8cb13501c377fc"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // ---- Accounts ----
+  const accounts = {
+    "Elya": { password: "1234", isAdmin: false },
+    "Vilou": { password: "5678", isAdmin: false },
+    "Seva": { password: "0107", isAdmin: true } // admin but no label shown
+  };
+
+  let loggedInUser = null;
+  let viewingUser = null;
+
+  function login() {
+    const nick = document.getElementById("nicknameInput").value.trim();
+    const pass = document.getElementById("passwordInput").value.trim();
+    const errorEl = document.getElementById("loginError");
+
+    if (!accounts[nick]) {
+      errorEl.textContent = "User not found";
+      return;
+    }
+    if (accounts[nick].password !== pass) {
+      errorEl.textContent = "Wrong password";
+      return;
+    }
+
+    loggedInUser = nick;
+    errorEl.textContent = "";
+    document.getElementById("loginDiv").style.display = "none";
+    document.getElementById("userListDiv").style.display = "block";
+    document.getElementById("historyDiv").style.display = "none";
+
+    renderUsers();
+  }
+
+  function logout() {
+    loggedInUser = null;
+    viewingUser = null;
+    document.getElementById("loginDiv").style.display = "block";
+    document.getElementById("userListDiv").style.display = "none";
+    document.getElementById("historyDiv").style.display = "none";
+    document.getElementById("nicknameInput").value = "";
+    document.getElementById("passwordInput").value = "";
+    document.getElementById("loginError").textContent = "";
+  }
+
+  function renderUsers() {
+    const container = document.getElementById("usersContainer");
+    container.innerHTML = "";
+
+    for (const nick in accounts) {
+      const user = accounts[nick];
+
+      const div = document.createElement("div");
+      div.className = "user-item";
+
+      const userInfo = document.createElement("div");
+      userInfo.className = "user-info";
+      userInfo.textContent = nick;
+      if (user.isAdmin && nick !== "Seva") {
+        const adminLabel = document.createElement("span");
+        adminLabel.className = "admin-label";
+        adminLabel.textContent = "admin";
+        userInfo.appendChild(adminLabel);
+      }
+      div.appendChild(userInfo);
+
+      const controls = document.createElement("div");
+      controls.className = "user-controls";
+
+      const viewBtn = document.createElement("button");
+      viewBtn.textContent = "History Pidmetannya";
+      viewBtn.onclick = () => openHistory(nick);
+      controls.appendChild(viewBtn);
+
+      if (accounts[loggedInUser].isAdmin) {
+        // Change nickname input
+        const nickInput = document.createElement("input");
+        nickInput.type = "text";
+        nickInput.value = nick;
+        nickInput.title = "Change nickname";
+        nickInput.onchange = () => changeNickname(nick, nickInput.value);
+        controls.appendChild(nickInput);
+
+        // Change password input
+        const passInput = document.createElement("input");
+        passInput.type = "password";
+        passInput.placeholder = "New password";
+        passInput.title = "Change password";
+        passInput.onchange = () => changePassword(nick, passInput.value);
+        controls.appendChild(passInput);
+      }
+
+      div.appendChild(controls);
+      container.appendChild(div);
+    }
+  }
+
+  function changeNickname(oldNick, newNick) {
+    if (!newNick || newNick === oldNick || accounts[newNick]) {
+      alert("Invalid or existing nickname");
+      renderUsers();
+      return;
+    }
+    accounts[newNick] = accounts[oldNick];
+    delete accounts[oldNick];
+    // Примітка: історія Firebase для старого ніку залишається — перенесення не реалізоване
+    renderUsers();
+  }
+
+  function changePassword(nick, newPass) {
+    if (!newPass) {
+      alert("Password cannot be empty");
+      return;
+    }
+    accounts[nick].password = newPass;
+  }
+
+  function openHistory(nick) {
+    viewingUser = nick;
+    document.getElementById("currentUserName").textContent = nick;
+    document.getElementById("historyDiv").style.display = "block";
+    loadHistory(nick);
+  }
+
+  function addMark(mark) {
+    if (!viewingUser) return;
+    const timestamp = Date.now();
+    db.ref('users/' + viewingUser + '/marks/' + timestamp).set(mark);
+  }
+
+  function loadHistory(nick) {
+    const historyList = document.getElementById("historyList");
+    db.ref('users/' + nick + '/marks').on('value', snapshot => {
+      const data = snapshot.val();
+      historyList.innerHTML = "";
+      if (data) {
+        const sortedKeys = Object.keys(data).sort();
+        sortedKeys.forEach(key => {
+          const li = document.createElement("li");
+          li.textContent = data[key];
+          historyList.appendChild(li);
+        });
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
