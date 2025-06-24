@@ -155,6 +155,17 @@
     text-align: center;
     font-weight: 600;
     color: #3730a3;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #historyList li button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 12px;
+    color: #ef4444;
   }
   @media (max-width: 480px) {
     main {
@@ -215,7 +226,7 @@
 
   // ---- Аккаунти ----
   const accounts = {
-    "Elya": { password: "1234", isAdmin: false },
+    "Elya": { password: "9072", isAdmin: false },
     "Vilou": { password: "5678", isAdmin: false },
     "Seva": { password: "0107", isAdmin: false }, // НЕ адмін
     "Admin": { password: "adminpass", isAdmin: true } // НЕ показується у списку
@@ -353,9 +364,26 @@
       historyList.innerHTML = "";
       if (data) {
         const sortedKeys = Object.keys(data).sort();
+
         sortedKeys.forEach(key => {
           const li = document.createElement("li");
-          li.textContent = data[key];
+
+          const markSpan = document.createElement("span");
+          markSpan.textContent = data[key];
+          li.appendChild(markSpan);
+
+          if (accounts[loggedInUser].isAdmin) {
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "M";
+            delBtn.title = "Delete this mark";
+            delBtn.onclick = () => {
+              if(confirm("Delete this mark?")) {
+                db.ref('users/' + nick + '/marks/' + key).remove();
+              }
+            };
+            li.appendChild(delBtn);
+          }
+
           historyList.appendChild(li);
         });
       }
