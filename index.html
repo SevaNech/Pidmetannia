@@ -208,7 +208,7 @@
     <h2>History for <span id="currentUserName"></span></h2>
     <div id="addMarksButtons" style="margin-bottom: 12px;">
       <button onclick="addMark('+')" aria-label="Add plus">+</button>
-      <button onclick="addMark('-')" aria-label="Add minus">?</button>
+      <button onclick="addMark('-')" aria-label="Add minus">−</button>
     </div>
     <ul id="historyList"></ul>
   </div>
@@ -305,7 +305,7 @@
       viewBtn.onclick = () => openHistory(nick);
       controls.appendChild(viewBtn);
 
-      // Якщо увійшов Admin — показуємо повний контроль
+      // Якщо увійшов Admin — показуємо повний контроль з видимим паролем
       if (accounts[loggedInUser].isAdmin) {
         // Поле для зміни ніку
         const nickInput = document.createElement("input");
@@ -315,10 +315,10 @@
         nickInput.onchange = () => changeNickname(nick, nickInput.value);
         controls.appendChild(nickInput);
 
-        // Поле для зміни пароля
+        // Тепер поле пароля відкрите, з поточним паролем
         const passInput = document.createElement("input");
-        passInput.type = "password";
-        passInput.placeholder = "New password";
+        passInput.type = "text";  // Змінив на text, щоб бачити пароль
+        passInput.value = user.password;
         passInput.title = "Change password";
         passInput.onchange = () => changePassword(nick, passInput.value);
         controls.appendChild(passInput);
@@ -337,7 +337,6 @@
     }
     accounts[newNick] = accounts[oldNick];
     delete accounts[oldNick];
-    // Примітка: Історія Firebase для старого ніку залишиться без змін
     renderUsers();
   }
 
@@ -366,7 +365,7 @@
 
   function addMark(mark) {
     if (!viewingUser) return;
-    if (!accounts[loggedInUser].isAdmin) return; // Додаємо лише якщо адмін
+    if (!accounts[loggedInUser].isAdmin) return;
     const timestamp = Date.now();
     db.ref('users/' + viewingUser + '/marks/' + timestamp).set(mark);
   }
@@ -388,7 +387,7 @@
 
           if (accounts[loggedInUser].isAdmin) {
             const delBtn = document.createElement("button");
-            delBtn.textContent = "M";
+            delBtn.textContent = "🗑️";
             delBtn.title = "Delete this mark";
             delBtn.onclick = () => {
               if(confirm("Delete this mark?")) {
@@ -407,3 +406,4 @@
 
 </body>
 </html>
+
