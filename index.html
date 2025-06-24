@@ -129,6 +129,9 @@
     box-shadow: 0 0 5px rgba(79,70,229,0.5);
     outline: none;
   }
+  .history-section #addMarksButtons {
+    margin-bottom: 12px;
+  }
   .history-section button {
     width: 70px;
     font-size: 28px;
@@ -203,8 +206,10 @@
 
   <div class="history-section" id="historyDiv" style="display:none;">
     <h2>History for <span id="currentUserName"></span></h2>
-    <button onclick="addMark('+')" aria-label="Add plus">+</button>
-    <button onclick="addMark('-')" aria-label="Add minus">?</button>
+    <div id="addMarksButtons" style="margin-bottom: 12px;">
+      <button onclick="addMark('+')" aria-label="Add plus">+</button>
+      <button onclick="addMark('-')" aria-label="Add minus">?</button>
+    </div>
     <ul id="historyList"></ul>
   </div>
 </main>
@@ -226,7 +231,7 @@
 
   // ---- Аккаунти ----
   const accounts = {
-    "Elya": { password: "9072", isAdmin: false },
+    "Elya": { password: "1234", isAdmin: false },
     "Vilou": { password: "5678", isAdmin: false },
     "Seva": { password: "0107", isAdmin: false }, // НЕ адмін
     "Admin": { password: "adminpass", isAdmin: true } // НЕ показується у списку
@@ -348,11 +353,20 @@
     viewingUser = nick;
     document.getElementById("currentUserName").textContent = nick;
     document.getElementById("historyDiv").style.display = "block";
+
+    // Показати або приховати кнопки "+" та "-" тільки для адміна
+    if (accounts[loggedInUser].isAdmin) {
+      document.getElementById("addMarksButtons").style.display = "block";
+    } else {
+      document.getElementById("addMarksButtons").style.display = "none";
+    }
+
     loadHistory(nick);
   }
 
   function addMark(mark) {
     if (!viewingUser) return;
+    if (!accounts[loggedInUser].isAdmin) return; // Додаємо лише якщо адмін
     const timestamp = Date.now();
     db.ref('users/' + viewingUser + '/marks/' + timestamp).set(mark);
   }
