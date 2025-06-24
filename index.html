@@ -10,10 +10,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-  /* Reset some default styles */
-  * {
-    box-sizing: border-box;
-  }
+  /* Reset */
+  * { box-sizing: border-box; }
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #f0f4f8;
@@ -179,9 +177,9 @@
   <div class="login" id="loginDiv">
     <h2>Login</h2>
     <label for="nicknameInput">Nickname:</label>
-    <input type="text" id="nicknameInput" placeholder="Enter nickname" />
+    <input type="text" id="nicknameInput" placeholder="Enter nickname" autocomplete="username" />
     <label for="passwordInput">Password:</label>
-    <input type="password" id="passwordInput" placeholder="Enter password" />
+    <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password" />
     <button id="loginBtn" onclick="login()">Login</button>
     <p id="loginError"></p>
   </div>
@@ -202,7 +200,7 @@
 
 <script>
   // ---- Firebase Config ----
- const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyAdCQbwBXO2htS1yGAb-MbCcmg6Gh7QzkY",
     authDomain: "pidmetania.firebaseapp.com",
     databaseURL: "https://pidmetania-default-rtdb.firebaseio.com",
@@ -215,11 +213,12 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // ---- Accounts ----
+  // ---- Аккаунти ----
   const accounts = {
     "Elya": { password: "1234", isAdmin: false },
     "Vilou": { password: "5678", isAdmin: false },
-    "Seva": { password: "0107", isAdmin: true } // admin but no label shown
+    "Seva": { password: "0107", isAdmin: false }, // НЕ адмін
+    "Admin": { password: "adminpass", isAdmin: true } // НЕ показується у списку
   };
 
   let loggedInUser = null;
@@ -264,6 +263,8 @@
     container.innerHTML = "";
 
     for (const nick in accounts) {
+      if (nick === "Admin") continue; // Не показуємо Admin в списку
+
       const user = accounts[nick];
 
       const div = document.createElement("div");
@@ -288,8 +289,9 @@
       viewBtn.onclick = () => openHistory(nick);
       controls.appendChild(viewBtn);
 
+      // Якщо увійшов Admin — показуємо повний контроль
       if (accounts[loggedInUser].isAdmin) {
-        // Change nickname input
+        // Поле для зміни ніку
         const nickInput = document.createElement("input");
         nickInput.type = "text";
         nickInput.value = nick;
@@ -297,7 +299,7 @@
         nickInput.onchange = () => changeNickname(nick, nickInput.value);
         controls.appendChild(nickInput);
 
-        // Change password input
+        // Поле для зміни пароля
         const passInput = document.createElement("input");
         passInput.type = "password";
         passInput.placeholder = "New password";
@@ -319,7 +321,7 @@
     }
     accounts[newNick] = accounts[oldNick];
     delete accounts[oldNick];
-    // �������: ������ Firebase ��� ������� ���� ���������� � ����������� �� ����������
+    // Примітка: Історія Firebase для старого ніку залишиться без змін
     renderUsers();
   }
 
